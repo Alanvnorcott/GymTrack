@@ -1,7 +1,8 @@
-//main.dart
 import 'package:flutter/material.dart';
 import 'calendar_page.dart';
 import 'profile_page.dart';
+import 'home_page.dart';
+import 'gym_page.dart';
 
 void main() {
   runApp(const WorkoutTrackerApp());
@@ -14,133 +15,67 @@ class WorkoutTrackerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Workout Tracker',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const HomePage(),
-        '/calendar': (context) => const CalendarPage(),
-        '/profile': (context) => const ProfilePage(),
-      },
+      home: SimpleBottomNavigation(),
     );
   }
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+class SimpleBottomNavigation extends StatefulWidget {
+  const SimpleBottomNavigation({Key? key}) : super(key: key);
+
+  @override
+  State<SimpleBottomNavigation> createState() => _SimpleBottomNavigationState();
+}
+
+class _SimpleBottomNavigationState extends State<SimpleBottomNavigation> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = [
+    HomePage(), // Replace with your Home page
+    CalendarPage(), // Assuming you have a CalendarPage class
+    GymPage(), // Replace with your Gyms page
+    ProfilePage(), // Assuming you have a ProfilePage class
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Today'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/calendar');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    primary: Colors.transparent,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: Colors.white, width: 2),
-                    ),
-                  ),
-                  child: const Text(
-                    'Calendar',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/profile');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    primary: Colors.transparent,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: Colors.white, width: 2),
-                    ),
-                  ),
-                  child: const Text(
-                    'Profile',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/calendar');
-              },
-              child: const Text('Go to Calendar Page'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/profile');
-              },
-              child: const Text('Go to Profile Page'),
-            ),
-          ],
-        ),
+      appBar: AppBar(title: const Text('FitTrack')),
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        selectedItemColor: const Color(0xff6200ee),
+        unselectedItemColor: const Color(0xff757575),
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        items: _navBarItems,
       ),
     );
   }
 }
 
-class CalendarPage extends StatelessWidget {
-  const CalendarPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calendar Page'),
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context); // Go back to the previous page
-          },
-          child: const Text('Go Back'),
-        ),
-      ),
-    );
-  }
-}
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile Page'),
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context); // Go back to the previous page
-          },
-          child: const Text('Go Back'),
-        ),
-      ),
-    );
-  }
-}
+const _navBarItems = [
+  BottomNavigationBarItem(
+    icon: Icon(Icons.home_outlined),
+    activeIcon: Icon(Icons.home_rounded),
+    label: 'Home',
+  ),
+  BottomNavigationBarItem(
+    icon: Icon(Icons.calendar_month_outlined),
+    activeIcon: Icon(Icons.calendar_month_outlined),
+    label: 'Calendar',
+  ),
+  BottomNavigationBarItem(
+    icon: Icon(Icons.map_outlined),
+    activeIcon: Icon(Icons.map_outlined),
+    label: 'Gyms',
+  ),
+  BottomNavigationBarItem(
+    icon: Icon(Icons.person_outline_rounded),
+    activeIcon: Icon(Icons.person_rounded),
+    label: 'Profile',
+  ),
+];
