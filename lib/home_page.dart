@@ -121,22 +121,30 @@ class WorkoutSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ExpansionTile(
-      title: Row(
-        children: [
-          Text(title),
-          Spacer(),
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => WorkoutSelect()),
-              );
-            },
+    return Column(
+      children: [
+        ExpansionTile(
+          title: Row(
+            children: [
+              Text(title),
+              Spacer(),
+              IconButton(
+                icon: Icon(Icons.add),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => WorkoutSelect()),
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Divider(
+          color: Colors.grey,
+          thickness: 1,
+        ),
+      ],
     );
   }
 }
