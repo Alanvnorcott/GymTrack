@@ -1,9 +1,10 @@
-//workout_details.dart
+// workout_details.dart
+
 import 'package:flutter/material.dart';
 
 class WorkoutDetails extends StatefulWidget {
   final String workoutName;
-  final Function(Workout) onAddWorkout; // Callback function to pass the workout back to the home page
+  final Function(Workout) onAddWorkout;
 
   const WorkoutDetails({Key? key, required this.workoutName, required this.onAddWorkout}) : super(key: key);
 
@@ -86,16 +87,13 @@ class _WorkoutDetailsState extends State<WorkoutDetails> {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Create a new workout object with the entered details
                   Workout workout = Workout(
                     name: widget.workoutName,
                     reps: reps,
                     sets: sets,
                     intensity: intensity,
                   );
-                  // Pass the workout back to the home page using the callback function
                   widget.onAddWorkout(workout);
-                  // Navigate back to the previous screen
                   Navigator.pop(context);
                 },
                 child: Text('Add'),

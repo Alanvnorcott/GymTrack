@@ -1,10 +1,24 @@
-//home_page.dart
+// home_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'calendar_page.dart';
 import 'workout_select.dart';
+import 'workout_details.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  Map<String, List<Workout>> workoutsMap = {
+    'Weight Training': [],
+    'Calisthenics': [],
+    'Cardio': [],
+    'Other': [],
+  };
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -13,7 +27,6 @@ class HomePage extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.calendar_month_outlined),
           onPressed: () {
-            // Navigate to the CalendarPage when the button is pressed
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => CalendarPage()),
@@ -34,20 +47,17 @@ class HomePage extends StatelessWidget {
           ),
           Expanded(
             child: ListView(
-              children: [
-                WorkoutSection(
-                  title: 'Weight Training',
-                ),
-                WorkoutSection(
-                  title: 'Calisthenics',
-                ),
-                WorkoutSection(
-                  title: 'Cardio',
-                ),
-                WorkoutSection(
-                  title: 'Other',
-                ),
-              ],
+              children: workoutsMap.keys.map((title) {
+                return WorkoutSection(
+                  title: title,
+                  workouts: workoutsMap[title]!,
+                  onAddWorkout: (workout) {
+                    setState(() {
+                      workoutsMap[title]!.add(workout);
+                    });
+                  },
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -111,29 +121,114 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class WorkoutSection extends StatelessWidget {
+class WorkoutSection extends StatefulWidget {
   final String title;
+  final List<Workout> workouts;
+  final Function(Workout) onAddWorkout;
 
   const WorkoutSection({
     Key? key,
     required this.title,
+    required this.workouts,
+    required this.onAddWorkout,
   }) : super(key: key);
+
+  @override
+  _WorkoutSectionState createState() => _WorkoutSectionState();
+}
+
+class _WorkoutSectionState extends State<WorkoutSection> {
+  String workoutName = '';
+  int reps = 0;
+  int sets = 0;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ExpansionTile(
+        ListTile(
           title: Row(
             children: [
-              Text(title),
+              Text(
+                widget.title,
+                style: TextStyle(color: Colors.blue), // Change category color here
+              ),
               Spacer(),
               IconButton(
                 icon: Icon(Icons.add),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => WorkoutSelect()),
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) {
+                      return Container(
+                        padding: EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Workout Name:',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 8),
+                            TextField(
+                              onChanged: (value) {
+                                setState(() {
+                                  workoutName = value;
+                                });
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Enter workout name',
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Reps:',
+                              style: TextStyle(fontSize: 18),
+                            ),
+                            SizedBox(height: 8),
+                            TextFormField(
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) {
+                                setState(() {
+                                  reps = int.tryParse(value) ?? 0;
+                                });
+                              },
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Sets:',
+                              style: TextStyle(fontSize: 18),
+                            ),
+                            SizedBox(height: 8),
+                            TextFormField(
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) {
+                                setState(() {
+                                  sets = int.tryParse(value) ?? 0;
+                                });
+                              },
+                            ),
+                            SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                if (workoutName.isNotEmpty && reps > 0 && sets > 0) {
+                                  Workout workout = Workout(
+                                    name: workoutName,
+                                    reps: reps,
+                                    sets: sets,
+                                    intensity: 0, // Intensity not used in this context
+                                  );
+                                  widget.onAddWorkout(workout);
+                                  Navigator.pop(context);
+                                }
+                              },
+                              child: Text('Add'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -144,6 +239,17 @@ class WorkoutSection extends StatelessWidget {
           color: Colors.grey,
           thickness: 1,
         ),
+        ...widget.workouts.map((workout) {
+          return ListTile(
+            title: Row(
+              children: [
+                Expanded(child: Text(workout.name)),
+                SizedBox(width: 16),
+                Text('Reps: ${workout.reps}, Sets: ${workout.sets}'),
+              ],
+            ),
+          );
+        }).toList(),
       ],
     );
   }
