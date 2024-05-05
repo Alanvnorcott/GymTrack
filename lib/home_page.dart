@@ -12,12 +12,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Map<String, List<Workout>> workoutsMap = {
-    'Weight Training': [],
-    'Calisthenics': [],
-    'Cardio': [],
-    'Other': [],
-  };
+  Map<DateTime, Map<String, List<Workout>>> workoutsMap = {};
+  DateTime selectedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -47,17 +43,17 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             child: ListView(
-              children: workoutsMap.keys.map((title) {
+              children: workoutsMap[selectedDate]?.keys.map((title) {
                 return WorkoutSection(
                   title: title,
-                  workouts: workoutsMap[title]!,
+                  workouts: workoutsMap[selectedDate]?[title] ?? [],
                   onAddWorkout: (workout) {
                     setState(() {
-                      workoutsMap[title]!.add(workout);
+                      workoutsMap[selectedDate]?[title]?.add(workout);
                     });
                   },
                 );
-              }).toList(),
+              }).toList() ?? [],
             ),
           ),
         ],
@@ -76,42 +72,53 @@ class _HomePageState extends State<HomePage> {
             final day = DateTime(now.year, now.month, now.day + index);
             final dayOfWeek =
             DateFormat('E').format(day)[0]; // First letter of the day of the week
-            final isToday = now.day == day.day; // Check if it's the current day
+            final isSelected = day.day == selectedDate.day; // Check if it's the selected day
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Column(
-                children: [
-                  Text(
-                    dayOfWeek,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: isToday ? Colors.white : Colors.white.withOpacity(0.7),
-                      // Slightly faded color for non-current days
-                      fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                      // Bold if it's the current day
-                    ),
-                  ),
-                  Container(
-                    width: 30,
-                    height: 30,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isToday ? const Color(0xffB1DDF1) : Colors.transparent,
-                    ),
-                    child: Text(
-                      '${day.day}',
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedDate = day;
+                    if (!workoutsMap.containsKey(day)) {
+                      workoutsMap[day] = {
+                        'Weight Training': [],
+                        'Calisthenics': [],
+                        'Cardio': [],
+                        'Other': [],
+                      };
+                    }
+                  });
+                },
+                child: Column(
+                  children: [
+                    Text(
+                      dayOfWeek,
                       style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        // Text color set to white for all dates
-                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                        // Bold if it's the current day
+                        fontSize: 18,
+                        color: isSelected ? Colors.white : Colors.white.withOpacity(0.7),
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
-                  ),
-                ],
+                    Container(
+                      width: 30,
+                      height: 30,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected ? const Color(0xffB1DDF1) : Colors.transparent,
+                      ),
+                      child: Text(
+                        '${day.day}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }),
@@ -120,6 +127,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+// ... (Rest of the code remains the same)
 
 class WorkoutSection extends StatefulWidget {
   final String title;
