@@ -1,4 +1,4 @@
-// home_page.dart
+//home_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -7,13 +7,34 @@ import 'workout_select.dart';
 import 'workout_details.dart';
 
 class HomePage extends StatefulWidget {
+  final DateTime selectedDate;
+  final Map<DateTime, Map<String, List<Workout>>> workoutsMap;
+
+  HomePage({required this.selectedDate, required this.workoutsMap});
+
   @override
-  _HomePageState createState() => _HomePageState();
+  _HomePageState createState() => _HomePageState(
+    selectedDate: selectedDate,
+    workoutsMap: workoutsMap, // Pass workoutsMap to the state
+  );
 }
 
 class _HomePageState extends State<HomePage> {
-  Map<DateTime, Map<String, List<Workout>>> workoutsMap = {};
-  DateTime selectedDate = DateTime.now();
+  late Map<DateTime, Map<String, List<Workout>>> workoutsMap;
+  late DateTime selectedDate;
+
+  _HomePageState({required this.selectedDate, required this.workoutsMap});
+
+  @override
+  void initState() {
+    super.initState();
+    workoutsMap = widget.workoutsMap; // Initialize workoutsMap
+    selectedDate = widget.selectedDate; // Initialize selectedDate
+  }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +46,16 @@ class _HomePageState extends State<HomePage> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => CalendarPage()),
+              MaterialPageRoute(
+                builder: (context) => CalendarPage(
+                  workoutsMap: workoutsMap,
+                  onDateSelected: (selectedDate) {
+                    setState(() {
+                      this.selectedDate = selectedDate;
+                    });
+                  },
+                ),
+              ),
             );
           },
         ),
@@ -43,7 +73,7 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             child: ListView(
-              children: workoutsMap[selectedDate]?.keys.map((title) {
+              children:workoutsMap[selectedDate]?.keys.map((title) {
                 return WorkoutSection(
                   title: title,
                   workouts: workoutsMap[selectedDate]?[title] ?? [],
@@ -54,6 +84,7 @@ class _HomePageState extends State<HomePage> {
                   },
                 );
               }).toList() ?? [],
+
             ),
           ),
         ],
@@ -70,9 +101,18 @@ class _HomePageState extends State<HomePage> {
         child: Row(
           children: List.generate(30, (index) {
             final day = DateTime(now.year, now.month, now.day + index);
-            final dayOfWeek =
-            DateFormat('E').format(day)[0]; // First letter of the day of the week
-            final isSelected = day.day == selectedDate.day; // Check if it's the selected day
+            final dayOfWeek = DateFormat('E').format(day)[0];
+            final isSelected = day.day == selectedDate.day;
+
+            // Initialize workoutsMap[day] if it doesn't exist
+            if (!workoutsMap.containsKey(day)) {
+              workoutsMap[day] = {
+                'Weight Training': [],
+                'Calisthenics': [],
+                'Cardio': [],
+                'Other': [],
+              };
+            }
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -80,14 +120,6 @@ class _HomePageState extends State<HomePage> {
                 onTap: () {
                   setState(() {
                     selectedDate = day;
-                    if (!workoutsMap.containsKey(day)) {
-                      workoutsMap[day] = {
-                        'Weight Training': [],
-                        'Calisthenics': [],
-                        'Cardio': [],
-                        'Other': [],
-                      };
-                    }
                   });
                 },
                 child: Column(
@@ -127,8 +159,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
-// ... (Rest of the code remains the same)
 
 class WorkoutSection extends StatefulWidget {
   final String title;

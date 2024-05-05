@@ -6,6 +6,7 @@ import 'calendar_page.dart';
 import 'profile_page.dart';
 import 'home_page.dart';
 import 'gym_page.dart';
+import 'workout_details.dart';
 
 void main() {
   runApp(const WorkoutTrackerApp());
@@ -39,13 +40,23 @@ class SimpleBottomNavigation extends StatefulWidget {
 
 class _SimpleBottomNavigationState extends State<SimpleBottomNavigation> {
   int _selectedIndex = 0;
+  late DateTime _selectedDate; // Declare selected date variable
 
-  final List<Widget> _pages = [
-    HomePage(), // Replace with your Home page
-    CalendarPage(), // Assuming you have a CalendarPage class
-    GymPage(), // Replace with your Gyms page
-    ProfilePage(), // Assuming you have a ProfilePage class
-  ];
+  late Map<DateTime, Map<String, List<Workout>>> _workoutsMap; // Declare workoutsMap variable
+
+  late List<Widget> _pages; // Declare pages variable
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = DateTime.now(); // Initialize selected date
+    _workoutsMap = {}; // Initialize workoutsMap
+    _pages = [
+      HomePage(selectedDate: _selectedDate, workoutsMap: _workoutsMap), // Pass selected date and workoutsMap to HomePage
+      GymPage(),
+      ProfilePage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +84,6 @@ const _navBarItems = [
     activeIcon: Icon(Icons.home_rounded),
     label: 'Home',
   ),
-
   BottomNavigationBarItem(
     icon: Icon(Icons.map_outlined),
     activeIcon: Icon(Icons.map_outlined),
