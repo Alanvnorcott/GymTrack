@@ -15,6 +15,13 @@ class WorkoutTrackerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Workout Tracker',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xff6200ee),
+          brightness: Brightness.dark,
+        ),
+      ),
       home: SimpleBottomNavigation(),
     );
   }
@@ -40,11 +47,11 @@ class _SimpleBottomNavigationState extends State<SimpleBottomNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('FitTrack')),
+      appBar: AppBar(),
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xff6200ee),
+        selectedItemColor: const Color(0xffB1DDF1),
         unselectedItemColor: const Color(0xff757575),
         onTap: (index) {
           setState(() {
@@ -63,11 +70,7 @@ const _navBarItems = [
     activeIcon: Icon(Icons.home_rounded),
     label: 'Home',
   ),
-  BottomNavigationBarItem(
-    icon: Icon(Icons.calendar_month_outlined),
-    activeIcon: Icon(Icons.calendar_month_outlined),
-    label: 'Calendar',
-  ),
+
   BottomNavigationBarItem(
     icon: Icon(Icons.map_outlined),
     activeIcon: Icon(Icons.map_outlined),
