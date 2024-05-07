@@ -252,7 +252,7 @@ class _WorkoutSectionState extends State<WorkoutSection> {
             children: [
               Text(
                 widget.title,
-                style: TextStyle(color: Colors.blue, fontSize: 18),
+                style: TextStyle(color: Color(0xffe85d04), fontSize: 18),
               ),
               Spacer(),
               IconButton(
