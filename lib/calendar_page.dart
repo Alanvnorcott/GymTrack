@@ -43,9 +43,10 @@ class _CalendarPageState extends State<CalendarPage> {
                 _focusedDay = focusedDay;
               });
 
-              // Call the onDateSelected callback function
-              widget.onDateSelected(selectedDay);
+              // Pass the selected date back to the previous page
+              Navigator.pop(context, selectedDay);
             },
+
             calendarStyle: CalendarStyle(
               selectedDecoration: BoxDecoration(
                 color: Colors.blue,

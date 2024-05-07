@@ -1,16 +1,22 @@
 //main.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'calendar_page.dart';
 import 'profile_page.dart';
 import 'home_page.dart';
 import 'gym_page.dart';
 import 'workout_details.dart';
+import 'oboarding_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(const WorkoutTrackerApp());
+  runApp(
+    ChangeNotifierProvider<DateChangeNotifier>(
+      create: (_) => DateChangeNotifier(DateTime.now()),
+      child: const WorkoutTrackerApp(),
+    ),
+  );
 }
+
 
 class WorkoutTrackerApp extends StatelessWidget {
   const WorkoutTrackerApp({Key? key}) : super(key: key);
@@ -26,9 +32,29 @@ class WorkoutTrackerApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: SimpleBottomNavigation(),
+      home: FutureBuilder<bool>(
+        future: _checkOnboardingStatus(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Container(); // Placeholder widget while waiting
+          } else {
+            final bool showOnboarding = snapshot.data ?? true;
+            return showOnboarding
+                ? ConcentricAnimationOnboarding()
+                : ChangeNotifierProvider(
+              create: (_) => DateChangeNotifier(DateTime.now()),
+              child: SimpleBottomNavigation(),
+            );
+          }
+        },
+      ),
     );
   }
+}
+
+Future<bool> _checkOnboardingStatus() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getBool('showOnboarding') ?? true;
 }
 
 class SimpleBottomNavigation extends StatefulWidget {
@@ -49,10 +75,11 @@ class _SimpleBottomNavigationState extends State<SimpleBottomNavigation> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now(); // Initialize selected date
-    _workoutsMap = {}; // Initialize workoutsMap
+    final dateChangeNotifier = Provider.of<DateChangeNotifier>(context, listen: false);
+    _selectedDate = dateChangeNotifier.date;
+    _workoutsMap = {};
     _pages = [
-      HomePage(selectedDate: _selectedDate, workoutsMap: _workoutsMap), // Pass selected date and workoutsMap to HomePage
+      HomePage(selectedDate: _selectedDate, workoutsMap: _workoutsMap),
       GymPage(),
       ProfilePage(),
     ];
@@ -65,7 +92,7 @@ class _SimpleBottomNavigationState extends State<SimpleBottomNavigation> {
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xffB1DDF1),
+        selectedItemColor: const Color(0xffe85d04),
         unselectedItemColor: const Color(0xff757575),
         onTap: (index) {
           setState(() {
@@ -77,6 +104,7 @@ class _SimpleBottomNavigationState extends State<SimpleBottomNavigation> {
     );
   }
 }
+
 
 const _navBarItems = [
   BottomNavigationBarItem(
@@ -95,3 +123,16 @@ const _navBarItems = [
     label: 'Profile',
   ),
 ];
+
+class DateChangeNotifier extends ChangeNotifier {
+  DateTime _date;
+
+  DateChangeNotifier(this._date);
+
+  DateTime get date => _date;
+
+  set date(DateTime newDate) {
+    _date = newDate;
+    notifyListeners();
+  }
+}

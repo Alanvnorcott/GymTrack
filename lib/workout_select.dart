@@ -1,3 +1,5 @@
+//workout_select.dart
+
 import 'package:flutter/material.dart';
 import 'workout_details.dart'; // Import the WorkoutDetails widget
 
@@ -52,6 +54,7 @@ class WorkoutListItem extends StatelessWidget {
                 // For now, you can print the workout details
                 print('Added workout: $workout');
               },
+              date: DateTime.now(), // Provide a default value for date
             )),
           );
         },

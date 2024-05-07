@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 
 class WorkoutDetails extends StatefulWidget {
   final String workoutName;
+  final DateTime date; // Add date property
   final Function(Workout) onAddWorkout;
 
-  const WorkoutDetails({Key? key, required this.workoutName, required this.onAddWorkout}) : super(key: key);
+  const WorkoutDetails({Key? key, required this.workoutName, required this.date, required this.onAddWorkout}) : super(key: key);
 
   @override
   _WorkoutDetailsState createState() => _WorkoutDetailsState();
@@ -92,6 +93,7 @@ class _WorkoutDetailsState extends State<WorkoutDetails> {
                     reps: reps,
                     sets: sets,
                     intensity: intensity,
+                    date: widget.date, // Pass date property
                   );
                   widget.onAddWorkout(workout);
                   Navigator.pop(context);
@@ -106,16 +108,30 @@ class _WorkoutDetailsState extends State<WorkoutDetails> {
   }
 }
 
+
 class Workout {
   final String name;
   final int reps;
   final int sets;
   final double intensity;
+  final DateTime date; // Add date property
 
   Workout({
     required this.name,
     required this.reps,
     required this.sets,
     required this.intensity,
+    required this.date, // Initialize date property in the constructor
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'reps': reps,
+      'sets': sets,
+      'intensity': intensity,
+      'date': date.toIso8601String(), // Convert date to string in ISO 8601 format
+    };
+  }
 }
+

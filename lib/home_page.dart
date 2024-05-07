@@ -1,10 +1,10 @@
-//home_page.dart
-
+// home_page.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'calendar_page.dart';
 import 'workout_select.dart';
 import 'workout_details.dart';
+import 'database_helper.dart';
 
 class HomePage extends StatefulWidget {
   final DateTime selectedDate;
@@ -13,28 +13,85 @@ class HomePage extends StatefulWidget {
   HomePage({required this.selectedDate, required this.workoutsMap});
 
   @override
-  _HomePageState createState() => _HomePageState(
-    selectedDate: selectedDate,
-    workoutsMap: workoutsMap, // Pass workoutsMap to the state
-  );
+  _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  late Map<DateTime, Map<String, List<Workout>>> workoutsMap;
   late DateTime selectedDate;
-
-  _HomePageState({required this.selectedDate, required this.workoutsMap});
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
 
   @override
   void initState() {
     super.initState();
-    workoutsMap = widget.workoutsMap; // Initialize workoutsMap
-    selectedDate = widget.selectedDate; // Initialize selectedDate
+    selectedDate = widget.selectedDate;
+    _loadWorkoutsFromDatabase();
+  }
+
+  Future<void> _loadWorkoutsFromDatabase() async {
+    final workouts = await _databaseHelper.getAllWorkouts();
+    Map<DateTime, Map<String, List<Workout>>> loadedWorkoutsMap = {};
+
+    for (final workout in workouts) {
+      final date = DateTime(workout.date.year, workout.date.month, workout.date.day);
+      final category = workout.name;
+      if (!loadedWorkoutsMap.containsKey(date)) {
+        loadedWorkoutsMap[date] = {
+          'Weight Training': [],
+          'Calisthenics': [],
+          'Cardio': [],
+          'Other': [],
+        };
+      }
+      loadedWorkoutsMap[date]?[category]?.add(workout);
+    }
+
+    setState(() {
+      // Assign the loaded workouts map to the widget's workoutsMap
+      widget.workoutsMap.clear();
+      widget.workoutsMap.addAll(loadedWorkoutsMap);
+    });
+  }
+
+
+  Future<void> _saveWorkoutsToDatabase() async {
+    for (final entry in widget.workoutsMap.entries) {
+      final date = entry.key;
+      final workouts = entry.value.values.expand((element) => element).toList();
+      await _databaseHelper.updateWorkouts(date, workouts);
+    }
+  }
+
+  void _addWorkout(Workout workout, String category) {
+    setState(() {
+      if (!widget.workoutsMap.containsKey(selectedDate)) {
+        widget.workoutsMap[selectedDate] = {
+          'Weight Training': [],
+          'Calisthenics': [],
+          'Cardio': [],
+          'Other': [],
+        };
+      }
+
+      // Add the workout to the respective category
+      widget.workoutsMap[selectedDate]?[category]?.add(workout);
+
+      // Save the workouts to the database
+      _saveWorkoutsToDatabase();
+    });
   }
 
 
 
-
+  void _deleteWorkout(Workout workout) {
+    setState(() {
+      for (final workouts in widget.workoutsMap.values) {
+        for (final category in workouts.values) {
+          category.removeWhere((w) => w == workout);
+        }
+      }
+      _saveWorkoutsToDatabase();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,27 +100,33 @@ class _HomePageState extends State<HomePage> {
         title: const Text(''),
         leading: IconButton(
           icon: Icon(Icons.calendar_month_outlined),
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            final DateTime? selectedDate = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => CalendarPage(
-                  workoutsMap: workoutsMap,
                   onDateSelected: (selectedDate) {
                     setState(() {
                       this.selectedDate = selectedDate;
                     });
                   },
+                  workoutsMap: widget.workoutsMap,
                 ),
               ),
             );
+
+            if (selectedDate != null) {
+              setState(() {
+                this.selectedDate = selectedDate;
+              });
+            }
           },
         ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          dateSelector(),
+          _dateSelector(),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
@@ -73,18 +136,14 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             child: ListView(
-              children:workoutsMap[selectedDate]?.keys.map((title) {
+              children: widget.workoutsMap[selectedDate]?.keys.map((title) {
                 return WorkoutSection(
                   title: title,
-                  workouts: workoutsMap[selectedDate]?[title] ?? [],
-                  onAddWorkout: (workout) {
-                    setState(() {
-                      workoutsMap[selectedDate]?[title]?.add(workout);
-                    });
-                  },
+                  workouts: widget.workoutsMap[selectedDate]?[title] ?? [],
+                  onAddWorkout: _addWorkout,
+                  onDeleteWorkout: _deleteWorkout,
                 );
               }).toList() ?? [],
-
             ),
           ),
         ],
@@ -92,7 +151,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget dateSelector() {
+  Widget _dateSelector() {
     final now = DateTime.now();
     return SizedBox(
       height: 80,
@@ -104,9 +163,8 @@ class _HomePageState extends State<HomePage> {
             final dayOfWeek = DateFormat('E').format(day)[0];
             final isSelected = day.day == selectedDate.day;
 
-            // Initialize workoutsMap[day] if it doesn't exist
-            if (!workoutsMap.containsKey(day)) {
-              workoutsMap[day] = {
+            if (!widget.workoutsMap.containsKey(day)) {
+              widget.workoutsMap[day] = {
                 'Weight Training': [],
                 'Calisthenics': [],
                 'Cardio': [],
@@ -138,7 +196,7 @@ class _HomePageState extends State<HomePage> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isSelected ? const Color(0xffB1DDF1) : Colors.transparent,
+                        color: isSelected ? const Color(0xffe85d04) : Colors.transparent,
                       ),
                       child: Text(
                         '${day.day}',
@@ -163,18 +221,21 @@ class _HomePageState extends State<HomePage> {
 class WorkoutSection extends StatefulWidget {
   final String title;
   final List<Workout> workouts;
-  final Function(Workout) onAddWorkout;
+  final Function(Workout, String) onAddWorkout; // Modify to accept both arguments
+  final Function(Workout) onDeleteWorkout;
 
   const WorkoutSection({
     Key? key,
     required this.title,
     required this.workouts,
     required this.onAddWorkout,
+    required this.onDeleteWorkout,
   }) : super(key: key);
 
   @override
   _WorkoutSectionState createState() => _WorkoutSectionState();
 }
+
 
 class _WorkoutSectionState extends State<WorkoutSection> {
   String workoutName = '';
@@ -184,91 +245,20 @@ class _WorkoutSectionState extends State<WorkoutSection> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListTile(
           title: Row(
             children: [
               Text(
                 widget.title,
-                style: TextStyle(color: Colors.blue), // Change category color here
+                style: TextStyle(color: Colors.blue, fontSize: 18),
               ),
               Spacer(),
               IconButton(
                 icon: Icon(Icons.add),
                 onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (context) {
-                      return Container(
-                        padding: EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Workout Name:',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 8),
-                            TextField(
-                              onChanged: (value) {
-                                setState(() {
-                                  workoutName = value;
-                                });
-                              },
-                              decoration: InputDecoration(
-                                hintText: 'Enter workout name',
-                              ),
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'Reps:',
-                              style: TextStyle(fontSize: 18),
-                            ),
-                            SizedBox(height: 8),
-                            TextFormField(
-                              keyboardType: TextInputType.number,
-                              onChanged: (value) {
-                                setState(() {
-                                  reps = int.tryParse(value) ?? 0;
-                                });
-                              },
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'Sets:',
-                              style: TextStyle(fontSize: 18),
-                            ),
-                            SizedBox(height: 8),
-                            TextFormField(
-                              keyboardType: TextInputType.number,
-                              onChanged: (value) {
-                                setState(() {
-                                  sets = int.tryParse(value) ?? 0;
-                                });
-                              },
-                            ),
-                            SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (workoutName.isNotEmpty && reps > 0 && sets > 0) {
-                                  Workout workout = Workout(
-                                    name: workoutName,
-                                    reps: reps,
-                                    sets: sets,
-                                    intensity: 0, // Intensity not used in this context
-                                  );
-                                  widget.onAddWorkout(workout);
-                                  Navigator.pop(context);
-                                }
-                              },
-                              child: Text('Add'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
+                  _showAddWorkoutModal(context, widget.title); // Pass category here
                 },
               ),
             ],
@@ -278,18 +268,106 @@ class _WorkoutSectionState extends State<WorkoutSection> {
           color: Colors.grey,
           thickness: 1,
         ),
-        ...widget.workouts.map((workout) {
-          return ListTile(
-            title: Row(
-              children: [
-                Expanded(child: Text(workout.name)),
-                SizedBox(width: 16),
-                Text('Reps: ${workout.reps}, Sets: ${workout.sets}'),
-              ],
-            ),
-          );
-        }).toList(),
+        if (widget.workouts.isNotEmpty)
+          Column(
+            children: widget.workouts.map((workout) {
+              return ListTile(
+                key: ValueKey(workout),
+                title: Row(
+                  children: [
+                    Expanded(child: Text(workout.name)),
+                    SizedBox(width: 16),
+                    Text('Reps: ${workout.reps}, Sets: ${workout.sets}'),
+                    IconButton(
+                      icon: Icon(Icons.remove_outlined),
+                      onPressed: () {
+                        widget.onDeleteWorkout(workout);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
       ],
+    );
+  }
+
+
+  void _showAddWorkoutModal(BuildContext context, String category) { // Accept category parameter
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Workout Name:',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                onChanged: (value) {
+                  setState(() {
+                    workoutName = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Enter workout name',
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Reps:',
+                style: TextStyle(fontSize: 18),
+              ),
+              SizedBox(height: 8),
+              TextFormField(
+                keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  setState(() {
+                    reps = int.tryParse(value) ?? 0;
+                  });
+                },
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Sets:',
+                style: TextStyle(fontSize: 18),
+              ),
+              SizedBox(height: 8),
+              TextFormField(
+                keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  setState(() {
+                    sets = int.tryParse(value) ?? 0;
+                  });
+                },
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  if (workoutName.isNotEmpty && reps > 0 && sets > 0) {
+                    Workout workout = Workout(
+                      name: workoutName,
+                      reps: reps,
+                      sets: sets,
+                      intensity: 0,
+                      date: DateTime.now(),
+                    );
+                    widget.onAddWorkout(workout, category); // Pass both workout and category here
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text('Add'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
