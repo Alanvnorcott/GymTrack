@@ -4,10 +4,15 @@ import 'package:flutter/material.dart';
 
 class WorkoutDetails extends StatefulWidget {
   final String workoutName;
-  final DateTime date; // Add date property
+  final DateTime date;
   final Function(Workout) onAddWorkout;
 
-  const WorkoutDetails({Key? key, required this.workoutName, required this.date, required this.onAddWorkout}) : super(key: key);
+  const WorkoutDetails({
+    Key? key,
+    required this.workoutName,
+    required this.date,
+    required this.onAddWorkout,
+  }) : super(key: key);
 
   @override
   _WorkoutDetailsState createState() => _WorkoutDetailsState();
@@ -17,6 +22,7 @@ class _WorkoutDetailsState extends State<WorkoutDetails> {
   int reps = 0;
   int sets = 0;
   double intensity = 3.0;
+  double weight = 0.0; // Add weight variable
 
   @override
   Widget build(BuildContext context) {
@@ -85,18 +91,45 @@ class _WorkoutDetailsState extends State<WorkoutDetails> {
               },
             ),
             SizedBox(height: 20),
+            Text(
+              'Weight:',
+              style: TextStyle(fontSize: 18),
+            ),
+            SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey),
+              ),
+              child: TextFormField(
+                keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  setState(() {
+                    weight = double.tryParse(value) ?? 0.0;
+                  });
+                },
+              ),
+            ),
+            SizedBox(height: 20),
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  Workout workout = Workout(
-                    name: widget.workoutName,
-                    reps: reps,
-                    sets: sets,
-                    intensity: intensity,
-                    date: widget.date, // Pass date property
-                  );
-                  widget.onAddWorkout(workout);
-                  Navigator.pop(context);
+                  if (widget.workoutName.isNotEmpty &&
+                      reps > 0 &&
+                      sets > 0 &&
+                      weight > 0.0) {
+                    Workout workout = Workout(
+                      name: widget.workoutName,
+                      reps: reps,
+                      sets: sets,
+                      intensity: intensity,
+                      date: widget.date,
+                      weightInKg: weight,
+                      weightInLb: weight * 2.20462,
+                    );
+                    widget.onAddWorkout(workout);
+                    Navigator.pop(context);
+                  }
                 },
                 child: Text('Add'),
               ),
@@ -108,20 +141,23 @@ class _WorkoutDetailsState extends State<WorkoutDetails> {
   }
 }
 
-
 class Workout {
   final String name;
   final int reps;
   final int sets;
   final double intensity;
-  final DateTime date; // Add date property
+  final DateTime date;
+  final double weightInKg;
+  final double weightInLb;
 
   Workout({
     required this.name,
     required this.reps,
     required this.sets,
     required this.intensity,
-    required this.date, // Initialize date property in the constructor
+    required this.date,
+    required this.weightInKg,
+    required this.weightInLb,
   });
 
   Map<String, dynamic> toMap() {
@@ -130,8 +166,9 @@ class Workout {
       'reps': reps,
       'sets': sets,
       'intensity': intensity,
-      'date': date.toIso8601String(), // Convert date to string in ISO 8601 format
+      'date': date.toIso8601String(),
+      'weightInKg': weightInKg,
+      'weightInLb': weightInLb,
     };
   }
 }
-

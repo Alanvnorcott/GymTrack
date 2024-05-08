@@ -5,6 +5,7 @@ import 'calendar_page.dart';
 import 'workout_select.dart';
 import 'workout_details.dart';
 import 'database_helper.dart';
+import 'package:pie_chart/pie_chart.dart'; // Importing the pie_chart package
 
 class HomePage extends StatefulWidget {
   final DateTime selectedDate;
@@ -19,6 +20,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late DateTime selectedDate;
   final DatabaseHelper _databaseHelper = DatabaseHelper();
+  bool useKilograms = true;
 
   @override
   void initState() {
@@ -46,12 +48,10 @@ class _HomePageState extends State<HomePage> {
     }
 
     setState(() {
-      // Assign the loaded workouts map to the widget's workoutsMap
       widget.workoutsMap.clear();
       widget.workoutsMap.addAll(loadedWorkoutsMap);
     });
   }
-
 
   Future<void> _saveWorkoutsToDatabase() async {
     for (final entry in widget.workoutsMap.entries) {
@@ -72,15 +72,11 @@ class _HomePageState extends State<HomePage> {
         };
       }
 
-      // Add the workout to the respective category
       widget.workoutsMap[selectedDate]?[category]?.add(workout);
 
-      // Save the workouts to the database
       _saveWorkoutsToDatabase();
     });
   }
-
-
 
   void _deleteWorkout(Workout workout) {
     setState(() {
@@ -91,6 +87,22 @@ class _HomePageState extends State<HomePage> {
       }
       _saveWorkoutsToDatabase();
     });
+  }
+
+  // Function to calculate workout breakdown for pie chart
+  Map<String, double> calculateWorkoutBreakdown() {
+    Map<String, double> breakdown = {
+      'Weight Training': 0,
+      'Calisthenics': 0,
+      'Cardio': 0,
+      'Other': 0,
+    };
+
+    widget.workoutsMap[selectedDate]?.forEach((category, workouts) {
+      breakdown[category] = workouts.length.toDouble();
+    });
+
+    return breakdown;
   }
 
   @override
@@ -122,6 +134,16 @@ class _HomePageState extends State<HomePage> {
             }
           },
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.change_circle_outlined),
+            onPressed: () {
+              setState(() {
+                useKilograms = !useKilograms;
+              });
+            },
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,14 +158,42 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             child: ListView(
-              children: widget.workoutsMap[selectedDate]?.keys.map((title) {
-                return WorkoutSection(
-                  title: title,
-                  workouts: widget.workoutsMap[selectedDate]?[title] ?? [],
-                  onAddWorkout: _addWorkout,
-                  onDeleteWorkout: _deleteWorkout,
-                );
-              }).toList() ?? [],
+              children: [
+                // Pie chart showing workout breakdown
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: PieChart(
+                    dataMap: calculateWorkoutBreakdown(),
+                    chartType: ChartType.ring,
+                    colorList: [
+                      Colors.blue,
+                      Colors.green,
+                      Colors.red,
+                      Colors.orange,
+                    ],
+                    chartRadius: MediaQuery.of(context).size.width / 3.2,
+                    ringStrokeWidth: 32,
+                    legendOptions: LegendOptions(
+                      showLegends: true,
+                      legendPosition: LegendPosition.bottom,
+                      legendTextStyle: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                // Workout sections
+                ...widget.workoutsMap[selectedDate]?.keys.map((title) {
+                  return WorkoutSection(
+                    title: title,
+                    workouts: widget.workoutsMap[selectedDate]?[title] ?? [],
+                    onAddWorkout: _addWorkout,
+                    onDeleteWorkout: _deleteWorkout,
+                    useKilograms: useKilograms,
+                  );
+                }).toList() ?? [],
+              ],
             ),
           ),
         ],
@@ -221,8 +271,9 @@ class _HomePageState extends State<HomePage> {
 class WorkoutSection extends StatefulWidget {
   final String title;
   final List<Workout> workouts;
-  final Function(Workout, String) onAddWorkout; // Modify to accept both arguments
+  final Function(Workout, String) onAddWorkout;
   final Function(Workout) onDeleteWorkout;
+  final bool useKilograms;
 
   const WorkoutSection({
     Key? key,
@@ -230,17 +281,18 @@ class WorkoutSection extends StatefulWidget {
     required this.workouts,
     required this.onAddWorkout,
     required this.onDeleteWorkout,
+    required this.useKilograms,
   }) : super(key: key);
 
   @override
   _WorkoutSectionState createState() => _WorkoutSectionState();
 }
 
-
 class _WorkoutSectionState extends State<WorkoutSection> {
   String workoutName = '';
   int reps = 0;
   int sets = 0;
+  double weight = 0.0;
 
   @override
   Widget build(BuildContext context) {
@@ -258,7 +310,7 @@ class _WorkoutSectionState extends State<WorkoutSection> {
               IconButton(
                 icon: Icon(Icons.add),
                 onPressed: () {
-                  _showAddWorkoutModal(context, widget.title); // Pass category here
+                  _showAddWorkoutModal(context, widget.title);
                 },
               ),
             ],
@@ -277,7 +329,12 @@ class _WorkoutSectionState extends State<WorkoutSection> {
                   children: [
                     Expanded(child: Text(workout.name)),
                     SizedBox(width: 16),
-                    Text('Reps: ${workout.reps}, Sets: ${workout.sets}'),
+                    Text('Reps: ${workout.reps}, Sets: ${workout
+                        .sets}, Weight: ${widget.useKilograms ? workout
+                        .weightInKg.toStringAsFixed(0) : workout.weightInLb
+                        .toStringAsFixed(0)} ${widget.useKilograms
+                        ? 'KG'
+                        : 'LB'}'),
                     IconButton(
                       icon: Icon(Icons.remove_outlined),
                       onPressed: () {
@@ -293,81 +350,114 @@ class _WorkoutSectionState extends State<WorkoutSection> {
     );
   }
 
+  void _showAddWorkoutModal(BuildContext context, String category) {
+    String workoutName = '';
+    int reps = 0;
+    int sets = 0;
+    double weight = 0.0;
 
-  void _showAddWorkoutModal(BuildContext context, String category) { // Accept category parameter
     showModalBottomSheet(
       context: context,
       builder: (context) {
-        return Container(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Workout Name:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    workoutName = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Enter workout name',
+        return SingleChildScrollView(
+          child: Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery
+                  .of(context)
+                  .viewInsets
+                  .bottom + 16.0,
+              left: 16.0,
+              right: 16.0,
+              top: 16.0,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Workout Name:',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Reps:',
-                style: TextStyle(fontSize: 18),
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  setState(() {
+                SizedBox(height: 8),
+                TextField(
+                  onChanged: (value) {
+                    workoutName = value;
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Enter workout name',
+                  ),
+                ),
+                if (reps != 0)
+                  SizedBox(height: 16),
+                Text(
+                  'Reps:',
+                  style: TextStyle(fontSize: 18),
+                ),
+                SizedBox(height: 8),
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
                     reps = int.tryParse(value) ?? 0;
-                  });
-                },
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Sets:',
-                style: TextStyle(fontSize: 18),
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  setState(() {
+                  },
+                ),
+                if (sets != 0)
+                  SizedBox(height: 16),
+                Text(
+                  'Sets:',
+                  style: TextStyle(fontSize: 18),
+                ),
+                SizedBox(height: 8),
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
                     sets = int.tryParse(value) ?? 0;
-                  });
-                },
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  if (workoutName.isNotEmpty && reps > 0 && sets > 0) {
-                    Workout workout = Workout(
-                      name: workoutName,
-                      reps: reps,
-                      sets: sets,
-                      intensity: 0,
-                      date: DateTime.now(),
-                    );
-                    widget.onAddWorkout(workout, category); // Pass both workout and category here
-                    Navigator.pop(context);
-                  }
-                },
-                child: Text('Add'),
-              ),
-            ],
+                  },
+                ),
+                if (weight != 0.0)
+                  SizedBox(height: 16),
+                Text(
+                  'Weight (${widget.useKilograms ? 'KG' : 'LB'}):',
+                  style: TextStyle(fontSize: 18),
+                ),
+                SizedBox(height: 8),
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
+                    weight = double.tryParse(value) ?? 0.0;
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Enter weight',
+                    suffix: Text(widget.useKilograms ? 'KG' : 'LB'),
+                  ),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    if (workoutName.isNotEmpty) {
+                      Workout workout = Workout(
+                        name: workoutName,
+                        reps: reps,
+                        sets: sets,
+                        intensity: 0,
+                        date: DateTime.now(),
+                        weightInKg: widget.useKilograms ? weight : weight /
+                            2.20462,
+                        weightInLb: widget.useKilograms
+                            ? weight * 2.20462
+                            : weight,
+                      );
+                      widget.onAddWorkout(workout, category);
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Text('Add'),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 }
+

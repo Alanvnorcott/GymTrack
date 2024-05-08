@@ -13,7 +13,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   String _name = "Your Name";
-  String _username = "@username";
+  String _username = "@email";
   String _bio = "Your Bio";
   File? _image;
 

@@ -20,7 +20,7 @@ class DatabaseHelper {
     final databasePath = join(path, 'workouts.db');
     return await openDatabase(databasePath, version: 1, onCreate: (db, version) {
       return db.execute(
-        'CREATE TABLE $tableName(id INTEGER PRIMARY KEY, name TEXT, reps INTEGER, sets INTEGER, intensity INTEGER, date TEXT)',
+        'CREATE TABLE $tableName(id INTEGER PRIMARY KEY, name TEXT, reps INTEGER, sets INTEGER, intensity INTEGER, date TEXT, weightInKg REAL, weightInLb REAL)',
       );
     });
   }
@@ -33,6 +33,8 @@ class DatabaseHelper {
       'sets': workout.sets,
       'intensity': workout.intensity,
       'date': workout.date.toIso8601String(),
+      'weightInKg': workout.weightInKg,
+      'weightInLb': workout.weightInLb,
     });
   }
 
@@ -50,6 +52,8 @@ class DatabaseHelper {
         sets: maps[i]['sets'],
         intensity: maps[i]['intensity'],
         date: DateTime.parse(maps[i]['date']),
+        weightInKg: maps[i]['weightInKg'],
+        weightInLb: maps[i]['weightInLb'],
       );
     });
   }
@@ -68,6 +72,8 @@ class DatabaseHelper {
         'sets': workout.sets,
         'intensity': workout.intensity,
         'date': date.toIso8601String(),
+        'weightInKg': workout.weightInKg,
+        'weightInLb': workout.weightInLb,
       });
     }
   }
@@ -82,6 +88,8 @@ class DatabaseHelper {
         sets: maps[i]['sets'],
         intensity: maps[i]['intensity'],
         date: DateTime.parse(maps[i]['date']),
+        weightInKg: maps[i]['weightInKg'],
+        weightInLb: maps[i]['weightInLb'],
       );
     });
   }
