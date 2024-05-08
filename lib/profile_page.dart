@@ -1,5 +1,10 @@
 //profile_page.dart
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -10,6 +15,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _name = "Your Name";
   String _username = "@username";
   String _bio = "Your Bio";
+  File? _image;
 
   @override
   Widget build(BuildContext context) {
@@ -109,11 +115,11 @@ class _ProfilePageState extends State<ProfilePage> {
       children: [
         GestureDetector(
           onTap: () {
-            // Handle avatar selection or upload
+            _showImagePicker(context);
           },
           child: CircleAvatar(
             maxRadius: 65,
-            backgroundImage: AssetImage("assets/placeholder_avatar.png"),
+            backgroundImage: _image != null ? FileImage(_image!) : AssetImage("assets/placeholder_avatar.png") as ImageProvider<Object>?,
             backgroundColor: Colors.transparent,
           ),
         ),
@@ -124,7 +130,11 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildButton({required IconData icon, required String title}) {
     return ElevatedButton(
       onPressed: () {
-        _showNotImplementedMessage(context);
+        if (title == 'Invite a Friend') {
+          _composeAndSendInvite();
+        } else {
+          _showNotImplementedMessage(context);
+        }
       },
       style: ElevatedButton.styleFrom(
         elevation: 0,
@@ -140,7 +150,6 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-
 
   void _editProfile(BuildContext context) async {
     final result = await Navigator.push(
@@ -181,6 +190,100 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       },
     );
+  }
+
+  void _composeAndSendInvite() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final TextEditingController _emailController = TextEditingController();
+
+        return AlertDialog(
+          title: Text('Compose Invite'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'Recipient Email',
+                ),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  _sendAppInvite(_emailController.text);
+                  Navigator.pop(context);
+                },
+                child: Text('Send Invite'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _sendAppInvite(String recipientEmail) async {
+    final smtpServer = gmail('Alanrock35@gmail.com', 'drpb wazm lzkj vdzx');
+
+    final message = Message()
+      ..from = Address('Alanrock35@gmail.com', 'Alan')
+      ..recipients.add(recipientEmail)
+      ..subject = 'Join me on GymTrack!'
+      ..text = 'Hey there!\n\nI am using GymTrack to track my workouts, and it\'s been fantastic! You should join me. Download GymTrack from the app store now!\n\nCheers,\n${_name}';
+
+    try {
+      final sendReport = await send(message, smtpServer);
+      print('Message sent: ${sendReport.toString()}');
+      // Additional code for feedback to the user
+    } catch (e) {
+      print('Error occurred while sending email: $e');
+      // Additional code for error handling
+    }
+  }
+
+  void _showImagePicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Select Image'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text('Choose from gallery'),
+                onTap: () {
+                  _getImage(ImageSource.gallery);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text('Take a photo'),
+                onTap: () {
+                  _getImage(ImageSource.camera);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _getImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
   }
 }
 
