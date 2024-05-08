@@ -37,6 +37,13 @@ dependencies:
   sqflite: ^2.3.2
   shared_preferences: ^2.2.3
   concentric_transition: ^1.0.3
+  http: ^0.13.3
+  html: ^0.15.4
+  web_scraper: ^0.1.4
+  location: ^6.0.2
+  csc_picker: ^0.2.7
+  permission_handler: ^9.2.0
+
 
 
   # The following adds the Cupertino Icons font to your application.

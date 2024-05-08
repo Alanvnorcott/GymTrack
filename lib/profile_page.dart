@@ -127,7 +127,6 @@ class _ProfilePageState extends State<ProfilePage> {
         _showNotImplementedMessage(context);
       },
       style: ElevatedButton.styleFrom(
-        primary: Colors.grey[800],
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
@@ -141,6 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
 
   void _editProfile(BuildContext context) async {
     final result = await Navigator.push(
