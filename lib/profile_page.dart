@@ -227,7 +227,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
             ),
             SizedBox(height: 20),
-            Text('Username'),
+            Text('Email'),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -240,7 +240,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   child: TextFormField(
                     controller: _usernameController,
                     decoration: InputDecoration(
-                      hintText: 'Enter your username',
+                      hintText: 'Enter your email',
                     ),
                   ),
                 ),

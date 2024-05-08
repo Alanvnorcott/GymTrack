@@ -13,13 +13,13 @@ final pages = [
     textColor: Colors.white,
   ),
   const PageData(
-    icon: Icons.map_outlined,
-    title: "Find new gyms!",
+    icon: Icons.dining_outlined,
+    title: "Create plans!",
     bgColor: Color(0xffe85d04),
     textColor: Color(0xff6200ee),
   ),
   const PageData(
-    icon: Icons.face_retouching_natural_sharp,
+    icon: Icons.upgrade_outlined,
     title: "Become a better you!",
     bgColor: Color(0xff6200ee),
     textColor: Color(0xffffffff),

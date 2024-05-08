@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'profile_page.dart';
 import 'home_page.dart';
-import 'gym_page.dart';
+import 'plan_page.dart';
 import 'workout_details.dart';
 import 'oboarding_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -80,7 +80,7 @@ class _SimpleBottomNavigationState extends State<SimpleBottomNavigation> {
     _workoutsMap = {};
     _pages = [
       HomePage(selectedDate: _selectedDate, workoutsMap: _workoutsMap),
-      GymPage(),
+      PlanPage(),
       ProfilePage(),
     ];
   }
@@ -113,9 +113,9 @@ const _navBarItems = [
     label: 'Home',
   ),
   BottomNavigationBarItem(
-    icon: Icon(Icons.map_outlined),
-    activeIcon: Icon(Icons.map_outlined),
-    label: 'Gyms',
+    icon: Icon(Icons.dining_outlined),
+    activeIcon: Icon(Icons.dining_rounded),
+    label: 'Plans',
   ),
   BottomNavigationBarItem(
     icon: Icon(Icons.person_outline_rounded),
